@@ -8,7 +8,7 @@ set more off
 
 
 ******************************************************
-** National Health & Aging Trends Survey (NHATS) **
+** National Health & Aging Trends Study (NHATS) **
 ******************************************************
 
 ************************
