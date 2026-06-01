@@ -2610,9 +2610,13 @@ label def freqskipmeal 0 "N/A" 1 "A Few Days" 2 "Several Days" 3 "More Than Half
 tab freqskipmeal, m
 
 
-g fhscore = shopwout+skipmeal+freqskipmeal
+g hi_freqskipmeal = inlist(freqskipmeal,2,3,4)
+label var hi_freqskipmeal "Frequently Skips Meals"
+
+g fhscore = shopwout+skipmeal+hi_freqskipmeal
 label var fhscore "Total Food Hardships"
 tab fhscore
+
 
 g foodhardshp = fhscore >= 1
 label var foodhardshp "Severe Food Hardship"
