@@ -2722,15 +2722,12 @@ drop if mcpts == .
 
 save "/Users/jennaauth/Desktop/IRP/NHATS/data/NHATS_PPAR_clean.dta", replace
 
-clear all
-
 ******************************************************
 
 ******************************************************
 ** ANALYSIS **
 ******************************************************
 
-use "/Users/jennaauth/Desktop/IRP/NHATS/data/NHATS_PPAR_clean.dta", clear
 cd "/Users/jennaauth/Desktop/IRP/NHATS/nhats_output"
 
 xtset spid round
@@ -2893,22 +2890,29 @@ est clear
 
 ** Table 5: NHATS Person Fixed Effects Estimates of Hardship for Change in Medigap/Supplemental Coverage Conditional on Female and Non-White Respondents
 
-/// col 1 - Food Hardship + Year + Non Constant Controls + Census Division
-eststo est1: xtreg foodhardshp medigap $YX $X $D if indpdntlv == 1 & female == 1 & white == 0 , fe
+/// cols 1 & 2 - Food Hardship + Year + Non Constant Controls + Census Division
+eststo est1: xtreg foodhardshp medigap $YX $X $D if indpdntlv == 1 & female == 1 , fe
+estadd ysumm
+eststo est2: xtreg foodhardshp medigap $YX $X $D if indpdntlv == 1 & white==0, fe
 estadd ysumm
 
-/// col 2 - Financial Hardships + Year + Non Constant Controls + Census Division
-eststo est2: xtreg finhardshp medigap $YX $X $D if indpdntlv == 1 & female == 1 & white == 0 , fe
+/// cols 3 & 4 - Financial Hardships + Year + Non Constant Controls + Census Division
+eststo est3: xtreg finhardshp medigap $YX $X $D if indpdntlv == 1 & female==1, fe
+estadd ysumm
+eststo est4: xtreg finhardshp medigap $YX $X $D if indpdntlv == 1 & white==0, fe
 estadd ysumm
 
-/// col 3 - Medical Hardship + Year + Non Constant Controls + Census Division
-eststo est3: xtreg nopaymed medigap $YX $X $D if indpdntlv == 1 & female == 1 & white == 0 , fe
+/// cols 4 & 5 - Medical Hardship + Year + Non Constant Controls + Census Division
+eststo est5: xtreg nopaymed medigap $YX $X $D if indpdntlv == 1 & female==1 , fe
+estadd ysumm
+eststo est6: xtreg nopaymed medigap $YX $X $D if indpdntlv == 1 & white==0 , fe
 estadd ysumm
 
 /// full table
-esttab est1 est2 est3 using table5_spfe_estxcont_nhats.rtf, se replace star(* 0.10 ** 0.05 *** 0.01) ///
+esttab est1 est2 est3 est4 est5 est6 using table5_spfe_estxcont_nhats.rtf, se replace star(* 0.10 ** 0.05 *** 0.01) ///
 label ar2 compress nogaps indicate("Year FE = y*") ///
-mtitles("Food Hardship" "Financial Hardship" "Medical Hardship" "Medical Hardship") ///
+mtitles("Food Hardship" "Food Hardship" "Financial Hardship" "Financial Hardship" "Medical Hardship" "Medical Hardship") ///
+mgroups("Food Hardship" "Financial Hardship" "Medical Hardship", pattern(1 0 1 0 1 0)) ///
 stats(N ymean ysd r2, labels("Observations" "Y Mean" "Y Std" "R-squared")) ///
  addnote("NHATS 2011-2024.")
 
