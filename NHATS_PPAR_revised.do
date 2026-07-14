@@ -448,326 +448,297 @@ clear all
 			  1.5: Clean Merged Rounds
 --------------------------------------------------------------------------*/
 
-*------------ROUND 1
+*---------ROUND 1
 use "merged_rounds/R1.dta", clear
 describe
 count
 
-g year = 2011
-label var year "Survey Year"
+gen year   = 2011
+gen retire = lf1workfpay == 3
 
-rename *dgender* gender
-label var gender "Gender of SP"
-label val gender gender
-label def gender 1 "Male" 2 "Female"
+// generate variables missing in R1
+gen spdied 	     = 0 if yearsample == 2011
+gen resnew_flg   = 0 if yearsample == 2011
+gen skipmeal     = 0 if yearsample == 2011
+gen freqskipmeal = 0 if yearsample == 2011
+gen nopayhous    = 0 if yearsample == 2011
+gen nopayutil    = 0 if yearsample == 2011
+gen nopaymed     = 0 if yearsample == 2011
 
-rename *racehisp* race
-recode race (4=3) (3=4) (5 6=5)
-label var race "Race/Ethnicity"
-label val race race
-label def race 		    ///
-1 "Non-Hispanic White"  ///
-2 "Non-Hispanic Black"  ///
-3 "Hispanic" 		    ///
-4 "Other Race" 		    ///
+// rename variables with general names (non-round specific)
+rename *dgender*   gender
+rename *racehisp*  race
+rename *higstschl* entryed
+rename r1status    spstatus
+rename r1dresid    resid
+rename *resptype*  resptype
+rename *intvrage*  intvage
+rename *martlstat* marstat
+rename *hshldnum*  houshldsz
+rename *lvngarrg*  lvngarrg
+rename *placedesc* resdesc
+rename *placekind* reskind
+rename *retiresen* retirhous
+rename *sec8pubsn* pubsnhous
+rename *facdescr*  facdesc_fq
+rename *osfacd*    osfacds_fq
+rename *facarea*   facarea_fq
+rename *osfaca*    osfacar_fq
+rename *censdiv*   censdiv
+rename *metnonmet* metro
+rename *mgapmedsp* medigapcov
+rename *covmedcad* partdcov
+rename *otdrugcov* otdrugcov
+rename *covtricar* tricarcov
+rename *cmedicaid* medicaidcov
+rename *totinc*    totalinc
+rename *workfpay*  workpay
+rename *wrkplstmn* worklsmo
+rename *shopwout*  skipgroc
+rename *howpaygr5* snpebt_flg
+rename *progneed1* snpebt
+rename *bankwout*  nopaybill
+rename *varunit*   varunit
+rename *varstrat*  varstrat
+rename *anfinwgt0* anfinwgt0
+
+// rename and label health condition variables
+local lbl1  "Heart Attack"
+local lbl2  "Heart Disease"
+local lbl3  "Hypertension"
+local lbl4  "Arthritis"
+local lbl5  "Osteoporosis"
+local lbl6  "Diabetes"
+local lbl7  "Lung Disease"
+local lbl8  "Stroke"
+local lbl9  "Dementia or Alzheimers"
+local lbl10 "Cancer"
+
+forvalues i = 1/10 {
+    rename hc1disescn`i' disescn`i'
+    label var disescn`i' "Ever Had `lbl`i''"
+}
+
+// re-label variables cohesively (non-round specific)
+label var year         "Survey Year"
+label var retire       "Retired"
+label var spdied       "Died Prior to Round"
+label var resnew_flg   "New Address"
+label var skipmeal     "Skipped Meals, No Money"
+label var freqskipmeal "Skip Meals How Often"
+label var nopayhous    "No Money for Housing"
+label var nopayutil    "No Money for Utilities"
+label var nopaymed     "Medical-Financial Hardship"
+label var gender       "Gender of SP"
+label var race         "Race/Ethnicity"
+label var entryed      "Highest Level of Education at Entry"
+label var spstatus     "Overall Case Status"
+label var resptype     "Respondent is Sample Person"
+label var intvage      "Categorical Age at Interview"
+label var marstat      "Marital Status"
+label var houshldsz    "Number of People Living in Household"
+label var lvngarrg     "Living Arrangement"
+label var resid        "Residential Care Status"
+label var resdesc      "Residence Description"
+label var reskind      "Type of Residence"
+label var retirhous    "Retirement Community/Senior Housing"
+label var pubsnhous    "Public Senior Housing (HME Section 8)"
+label var facdesc_fq   "Living Facility Type"
+label var osfacds_fq   "Specify Other Living Facility Type"
+label var facarea_fq   "Living Facility Area"
+label var osfacar_fq   "Specify Other Living Facility Area"
+label var censdiv      "Census Division"
+label var metro        "Metropolitan Residence Status"
+label var medigapcov   "Medigap Supplement"
+label var partdcov     "Part D Drug Coverage"
+label var otdrugcov    "Other Drug Coverage"
+label var tricarcov    "Tricare/VA Care"
+label var medicaidcov  "Medicaid Coverage"
+label var totalinc     "Total Income"
+label var workpay      "Worked for Pay Recently"
+label var worklsmo     "Worked for Pay in Last Month"
+label var skipgroc     "Ever Go Without Groceries"
+label var snpebt_flg   "Pay for Groceries Using Food Stamps"
+label var snpebt       "Recieved Food Stamps"
+label var nopaybill    "Ever Go Without Paying Bills"
+label var varunit      "Variance Estimation Cluster"
+label var varstrat     "Variance Estimation Stratum"
+label var anfinwgt0    "Full Final Analytic Weight"
+
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
+}
+
+global  B *hous* *cov* worklsmo skipgroc snpebt* nopay* metro disescn*
+recode $B (2 .=0)
+
+recode houshldsz  (0=.)
+recode lvngarrg   (4=3) (3=4)
+recode race       (4=3) (3=4) (5 6=5)
+recode resid      (4=3) (2 3=2)
+recode resdesc 	  (91=5) 
+recode reskind    (3=2) (5=3) (91=6)
+recode facdesc_fq (91=9)
+recode facarea_fq (91=5)
+recode workpay    (2 3 .=0) 
+
+// label variable values
+label val gender       gender
+label val race         race
+label val entryed      entryed
+label val spstatus     spstatus
+label val intvage      intvage
+label val marstat      marstat
+label val lvngarrg     lvngarrg
+label val resid        resid
+label val resdesc      resdesc
+label val reskind      reskind
+label val facdesc_fq   facdesc_fq
+label val osfacds_fq   osfacds_fq
+label val facarea_fq   facarea_fq
+label val osfacar_fq   osfacar_fq
+label val censdiv      censdiv
+label val metro        metro
+label val freqskipmeal freqskipmeal
+
+label val spdied resptype resnew_flg retirhous pubsnhous disescn* ///
+		  *cov* work* skipmeal skipgroc snp* nopay* binary
+
+// define variable label values		  
+label def binary ///
+0 "0" ///
+1 "1"
+
+label def gender ///
+1 "Male" ///
+2 "Female"
+
+label def race ///
+1 "Non-Hispanic White" ///
+2 "Non-Hispanic Black" ///
+3 "Hispanic" ///
+4 "Other Race" ///
 5 "Mulitple or Unknown"
 
-rename *higstschl* entryed
-recode entryed (-9/-1=.)
-label var entryed "Highest Degree of School SP Completed at Entry"
-label val entryed entryed
-label def entryed 					  ///
-1 "No Schooling" 					  ///
-2 "Grade 1-8" 						  ///
-3 "Some High School" 				  ///
-4 "High School Diploma" 			  ///
-5 "Vocational, Tech, or Trade School" ///
-6 "Some College, No Degree" 		  ///
-7 "Associate's Degree" 			      ///
-8 "Bachelor's Degree"				  ///
-9 "Professional Degree" 			  ///
-10 "N/A"
+label def entryed ///
+1  "No Schooling" ///
+2  "Grade 1-8" ///
+3  "Some High School" ///
+4  "High School Diploma" ///
+5  "Vocational, Tech, or Trade School" ///
+6  "Some College, No Degree" ///
+7  "Associate's Degree" ///
+8  "Bachelor's Degree" ///
+9  "Professional Degree"
 
-g spdied = 0 if yearsample == 2011
-label var spdied "Died Prior to Round"
-
-rename r1status spstatus
-label var spstatus "Overall Case Status"
-label val spstatus spstatus
-label def spstatus
-60 "Complete" 						  ///
-61 "Complete, NH Facility" 			  ///
+label def spstatus ///
+60 "Complete" ///
+61 "Complete, Living Facility" ///
 62 "Complete SP Deceased, Proxy Intv" ///
-63 "Complete SP, FQ not complete" 	  ///
+63 "Complete SP, FQ not complete" ///
 64 "Complete FQ, SP not complete"
 
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-label var resptype "Type of Respondent"
-label val resptype resptype
-label def resptype 1 "Sample Person" 2 "Proxy"
-
-rename *intvrage* intvage
-label var intvage "Categorical Age at Interview"
-label val intvage intvage
 label def intvage ///
-1 "65-69" 		  ///
-2 "70-74"		  ///
-3 "75-79" 		  ///
-4 "80-84" 		  ///
-5 "85-89" 		  ///
+1 "65-69" ///
+2 "70-74" ///
+3 "75-79" ///		  
+4 "80-84" ///		  
+5 "85-89" ///		  
 6 "90+"
 
-rename *martlstat* marstat
-recode marstat (-9/-1=.)
-label var marstat "Marital Status"
-label val marstat marstat
-label def marstat 		///
-1 "Married" 			///
+label def marstat ///		
+1 "Married" ///			
 2 "Living with Partner" ///
-3 "Separated"		    ///
-4 "Divorced" 			///
-5 "Widowed" 			///
-6 "Never Married" 		///
-7 "N/A"
+3 "Separated" ///
+4 "Divorced" ///
+5 "Widowed" ///
+6 "Never Married"
 
-g marchange = 0 if yearsample == 2011
-label var marchange "Change in Marital Status"
+label def lvngarrg ///
+1 "Alone" ///
+2 "With Partner" ///
+3 "With Others" ///
+4 "With Partner and Others"
 
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-label var houshldsz "Number of People Living in Household"
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-label var lvngarrg "Living Arrangement"
-label val lvngarrg lvngarrg
-label def lvngarrg 			///
-1 "Alone" 					///
-2 "With Partner" 			///
-3 "With Others" 			///
-4 "With Partner and Others" ///
-5 "N/A"
-
-g resnew_flg = 0 if yearsample == 2011
-label var resnew_flg "New Address"
-
-rename r1dresid resid
-recode resid (2 3=2) (4=3)
-label var resid "Residential Care Status"
-label val resid resid
-label def resid 	 ///
-1 "Community" 		 ///
+label def resid ///
+1 "Community" ///
 2 "Residential Care" ///
 3 "Nursing Home"
 
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-label var resdesc "Residence Description"
-label val resdesc resdesc
-label def resdesc 			 ///
-1 "Private Residence" 		 ///
-2 "Group Home" 				 ///
-3 "Assisted Living" 		 ///
-4 "Religious Group Quarters" ///
-5 "Other" 					 ///
-6 "N/A"
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-label var reskind "Type of Residence"
-label val reskind reskind
-label def reskind 	  ///
+label def resdesc ///
 1 "Private Residence" ///
-2 "Assisted Living"   ///
-3 "Nursing Home"      ///
-4 "Other" 			  ///
-5 "N/A"
+2 "Group Home" ///
+3 "Assisted Living" ///
+4 "Religious Group Quarters" ///
+5 "Other"
 
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-label var retirhous "Retirement Community/Senior Housing"
+label def reskind ///
+1 "Private Residence" ///
+2 "Assisted Living" ///
+3 "Nursing Home" ///
+4 "Other"
 
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-label var pubsnhous "Public Senior Housing (HME Section 8)"
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-label var factype_fq "Living Facility Type"
-label val factype_fq factype_fq
-label def factype_fq 						  ///
-1 "Nursing Home" 							  ///
-2 "Assisted Living" 						  ///
+label def facdesc_fq ///
+1 "Nursing Home" ///
+2 "Assisted Living" ///
 3 "Nursing Home and Assisted Living Facility" ///
-4 "Continuing Care Community" 			      ///
-5 "Adult Family Care Home" 					  ///
-6 "Group Home" 								  ///
-7 "Board and Care Home" 					  ///
-8 "Retirement Community or Senior Housing"	  ///
-9 "Other (Specify)"							  ///
-10 "N/A"
+4 "Continuing Care Community" ///
+5 "Adult Family Care Home" ///
+6 "Group Home" ///								  
+7 "Board and Care Home" ///					  
+8 "Retirement Community or Senior Housing" ///
+9 "Other (Specify)"			
 
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-label var othfactype_fq "Specify Other Living Facility Type"
-label val othfactype_fq othfactype_fq
-label def othfactype_fq 					     ///
-1 "Nursing Home" 							     ///
-2 "Assisted Living" 						     ///
-3 "Nursing Home and Assisted Living Facility"    ///
-4 "Continuing Care Community" 				     ///
-5 "Adult Family Care Home" 					     ///
-6 "Group Home" 								     ///
-7 "Board and Care Home" 					     ///
-8 "Retirement Community or Senior Housing" 	  	 ///
-9 "Independent Living" 						  	 ///
+label def osfacds_fq ///
+1 "Nursing Home" ///
+2 "Assisted Living" ///
+3 "Nursing Home and Assisted Living Facility" ///
+4 "Continuing Care Community" ///
+5 "Adult Family Care Home" ///
+6 "Group Home" ///
+7 "Board and Care Home" ///
+8 "Retirement Community or Senior Housing" ///
+9 "Independent Living" ///
 10 "Assisted and Independent Retirement Housing" ///
-11 "Housing (Apt, Condo, etc.)" 				 ///
-12 "N/A"
+11 "Housing (Apt, Condo, etc.)"
 
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-label var facarea_fq "Living Facility Area"
-label val facarea_fq facarea_fq
-label def facarea_fq 	   ///
-1 "Independent Living" 	   ///
-2 "Assisted Living" 	   ///
+label def facarea_fq ///
+1 "Independent Living" ///
+2 "Assisted Living" ///
 3 "Special or Memory Care" ///
-4 "Nursing Home" 		   ///
-5 "Other (Specify)"        ///
-6 "N/A"
+4 "Nursing Home" ///
+5 "Other (Specify)"
 
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-label var othfacarea_fq "Specify Other Living Facility Area"
-label val othfacarea_fq othfacarea_fq
-label def othfacarea_fq    ///
-1 "Independent Living" 	   ///
-2 "Assisted Living" 	   ///
+label def osfacar_fq ///
+1 "Independent Living" ///
+2 "Assisted Living" ///
 3 "Special or Memory Care" ///
-4 "Nursing Home"           ///
-5 "N/A"
+4 "Nursing Home"
 
-rename *censdiv* censdiv
-label var censdiv "Census Division"
-label val censdiv censdiv
-label def censdiv 	  ///
-1 "New England" 	  ///
-2 "Mid Atlantic" 	  ///
+label def censdiv ///
+1 "New England" ///
+2 "Mid Atlantic" ///
 3 "Northeast Midwest" ///
 4 "Northwest Midwest" ///
-5 "South Atlantic" 	  ///
+5 "South Atlantic" ///
 6 "Southeast Central" ///
 7 "Southwest Central" ///
-8 "West Mountain" 	  ///
+8 "West Mountain" ///
 9 "West Pacific"
 
-rename *metnonmet* metro
-recode metro (2=0)
-label var metro "Metropolitan Residence Status"
-label val metro metro
-label def metro 0 "Rural" 1 "Metropolitan"
+label def metro ///
+0 "Rural" ///
+1 "Metropolitan"
 
-
-local conditions `" "Heart Attack" "Heart Disease" "Hypertension" "Arthritis" "Osteoporosis" "Diabetes" "Lung Disease" "Stroke" "Dementia or Alzheimers" "Cancer" "'
-local i = 1
-foreach lbl of local conditions {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
-    label var disescn`i' "Ever Had `lbl'"
-    local i = `i' + 1
-}
-
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
-label var chgplncov "Changed Insurance Plan"
-
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
-label var medigapcov "Medigap Supplement"
-
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-label var partdcov "Part D Drug Coverage"
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-label var otdrugcov "Other Drug Coverage"
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-label var tricarcov "Tricare/VA Care"
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-label var medicaidcov "Medicaid Coverage"
-
-rename *totinc* totalinc totalinc
-recode totalinc (-9/-1 .=.)
-label var totalinc "Total Income"
-
-rename *workfpay* workpay
-label var workpay "Worked for Pay Recently"
-g retired = workpay == 3
-label var retired "Retired"
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-label var worklsmo "Worked for Pay in Last Month"
-
-g skipmeal = 0 if yearsample == 2011
-label var skipmeal "Skipped Meals, No Money"
-
-g freqskipmeal = 0 if yearsample == 2011
-label var freqskipmeal "Skip Meals How Often"
-label val freqskipmeal freqskipmeal
-label def freqskipmeal 		///
-0 "N/A" 			  		///
-1 "A Few Days" 		  		///
-2 "Several Days"       		///
+label def freqskipmeal ///
+0 "N/A" ///
+1 "A Few Days" ///
+2 "Several Days" ///
 3 "More Than Half the Days" ///
 4 "Nearly Every Day"
 
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-label var skipgroc "Ever Go Without Groceries"
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-label var snpebt_flg "Pay for Groceries Using Food Stamps"
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-label var snpebt "Recieved Food Stamps"
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-label var nopaybill "Ever Go Without Paying Bills"
-
-g nopayhous = 0 if yearsample == 2011
-label var nopayhous "No Money for Housing"
-
-g nopayutil = 0 if yearsample == 2011
-label var nopayutil "No Money for Utilities"
-
-g nopaymed = 0 if yearsample == 2011
-label var nopaymed "Medical-Financial Hardship"
-
-rename *varunit* varunit
-label var varunit "Variance Estimation Cluster"
-
-rename *varstrat* varstrat
-label var varstrat "Variance Estimation Stratum"
-
-rename *anfinwgt0* anfinwgt0
-label var anfinwgt0 "Full Final Analytic Weight"
-
-label val spdied marchange resnew_flg retirhous pubsnhous disescn* ///
-		  *cov* work* skipmeal skipgroc snp* nopay* binary
-label def binary 0 "0" 1 "1"
-
+// keep only variables of interest
 keep ///
 gender race entryed ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
@@ -777,134 +748,83 @@ describe
 count
 save "clean_rounds/R1_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 2
+*---------ROUND 2
 use "merged_rounds/R2.dta", clear
 describe
 count
 
-g year = 2012
+gen year = 2012
+gen retire = lf2workfpay == 3
 
-rename fl2spdied spdied
+// rename variables with general names (non-round specific)
+rename fl2spdied    spdied
+rename r2status     spstatus
+rename fl2resnew    resnew_flg
+rename r2dresid     resid
+rename *resptype*   resptype
+rename *intvrage*   intvage
+rename *marstat*    marstat
+rename *hshldnum*   houshldsz
+rename *lvngarrg*   lvngarrg
+rename *placedesc*  resdesc
+rename *placekind*  reskind
+rename *retiresen*  retirhous
+rename *sec8pubsn*  pubsnhous
+rename *facdescr*   facdesc_fq
+rename *osfacd*     osfacds_fq
+rename *facarea*    facarea_fq
+rename *osfaca*     osfacar_fq
+rename *censdiv*    censdiv
+rename *metnonmet*  metro
+rename *mgapmedsp*  medigapcov
+rename *covmedcad*  partdcov
+rename *otdrugcov*  otdrugcov
+rename *covtricar*  tricarcov
+rename *medicaid*   medicaidcov
+rename *workfpay*   workpay
+rename *wrkplstmn*  worklsmo
+rename *mealskip1*  skipmeal
+rename *mealskip2*  freqskipmeal
+rename *shopwout*   skipgroc
+rename *howpaygr5*  snpebt_flg
+rename *progneed1*  snpebt
+rename *bankwout*   nopaybill
+rename *nopayhous*  nopayhous
+rename *nopayutil*  nopayutil
+rename *nopaymed*   nopaymed
+rename *2varunit*   varunit
+rename *2varstrat*  varstrat
+rename *2anfinwgt0* anfinwgt0
+
+forvalues i = 1/10 {
+    rename hc2disescn`i' disescn`i'
+}
+
+// keep only living respondents
 recode spdied (-1=0)
 keep if spdied == 0
 
-rename r2status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0)
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl2resnew resnew_flg
-recode resnew_flg (-9/-1 2=0)
-
-rename r2dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0)
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
 }
 
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
+global  B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
 
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
 
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *medicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0)
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0)
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0)
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0)
-
-rename *2varunit* varunit
-rename *2varstrat* varstrat
-rename *2anfinwgt0* anfinwgt0
-
+// keep only variables of interest
 keep ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 work* reti* *skip* snp* nopay* var* anfinwgt0
@@ -913,137 +833,84 @@ describe
 count
 save "clean_rounds/R2_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 3
+*---------ROUND 3
 use "merged_rounds/R3.dta", clear
 describe
 count
 
 g year = 2013
+gen retire = lf3workfpay == 3
 
-rename fl3spdied spdied
+// rename variables with general names (non-round specific)
+rename fl3spdied    spdied
+rename r3status     spstatus
+rename fl3resnew    resnew_flg
+rename r3dresid     resid
+rename *resptype*   resptype
+rename *intvrage*   intvage
+rename *marstat*    marstat
+rename *hshldnum*   houshldsz
+rename *lvngarrg*   lvngarrg
+rename *placedesc*  resdesc
+rename *placekind*  reskind
+rename *retiresen*  retirhous
+rename *sec8pubsn*  pubsnhous
+rename *facdescr*   facdesc_fq
+rename *osfacd*     osfacds_fq
+rename *facarea*    facarea_fq
+rename *osfaca*     osfacar_fq
+rename *censdiv*    censdiv
+rename *metnonmet*  metro
+rename *mgapmedsp*  medigapcov
+rename *covmedcad*  partdcov
+rename *otdrugcov*  otdrugcov
+rename *covtricar*  tricarcov
+rename *medicaid*   medicaidcov
+rename *totinc*     totalinc
+rename *workfpay*   workpay
+rename *wrkplstmn*  worklsmo
+rename *mealskip1*  skipmeal
+rename *mealskip2*  freqskipmeal
+rename *shopwout*   skipgroc
+rename *howpaygr5*  snpebt_flg
+rename *progneed1*  snpebt
+rename *bankwout*   nopaybill
+rename *nopayhous*  nopayhous
+rename *nopayutil*  nopayutil
+rename *nopaymed*   nopaymed
+rename *3varunit*   varunit
+rename *3varstrat*  varstrat
+rename *3anfinwgt0* anfinwgt0
+
+forvalues i = 1/10 {
+    rename hc3disescn`i' disescn`i'
+}
+
+// keep only living respondents
 recode spdied (-1=0)
 keep if spdied == 0
 
-rename r3status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0)
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl3resnew resnew_flg
-recode resnew_flg (-9/-1 2=0)
-
-rename r3dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0)
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
 }
 
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
 
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
 
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *totinc* totalinc
-recode totalinc (-9/-1 .=.)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0)
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0)
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0)
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0)
-
-rename *3varunit* varunit
-rename *3varstrat* varstrat
-rename *3anfinwgt0* anfinwgt0
-
+// keep only variables of interest
 keep ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 tot* work* reti* *skip* snp* nopay* var* anfinwgt0
@@ -1052,134 +919,83 @@ describe
 count
 save "clean_rounds/R3_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 4
+*---------ROUND 4
 use "merged_rounds/R4.dta", clear
 describe
 count
 
 g year = 2014
+gen retire = lf4workfpay == 3
 
-rename fl4spdied spdied
+// rename variables with general names (non-round specific)
+rename fl4spdied    spdied
+rename r4status     spstatus
+rename fl4resnew    resnew_flg
+rename r4dresid     resid
+rename *resptype*   resptype
+rename *intvrage*   intvage
+rename *marstat*    marstat
+rename *hshldnum*   houshldsz
+rename *lvngarrg*   lvngarrg
+rename *placedesc*  resdesc
+rename *placekind*  reskind
+rename *retiresen*  retirhous
+rename *sec8pubsn*  pubsnhous
+rename *facdescr*   facdesc_fq
+rename *osfacd*     osfacds_fq
+rename *facarea*    facarea_fq
+rename *osfaca*     osfacar_fq
+rename *censdiv*    censdiv
+rename *metnonmet*  metro
+rename *mgapmedsp*  medigapcov
+rename *covmedcad*  partdcov
+rename *otdrugcov*  otdrugcov
+rename *covtricar*  tricarcov
+rename *medicaid*   medicaidcov
+rename *workfpay*   workpay
+rename *wrkplstmn*  worklsmo
+rename *mealskip1*  skipmeal
+rename *mealskip2*  freqskipmeal
+rename *shopwout*   skipgroc
+rename *howpaygr5*  snpebt_flg
+rename *progneed1*  snpebt
+rename *bankwout*   nopaybill
+rename *nopayhous*  nopayhous
+rename *nopayutil*  nopayutil
+rename *nopaymed*   nopaymed
+rename *4varunit*   varunit
+rename *4varstrat*  varstrat
+rename *4anfinwgt0* anfinwgt0
+
+forvalues i = 1/10 {
+    rename hc4disescn`i' disescn`i'
+}
+
+// keep only living respondents
 recode spdied (-1=0)
 keep if spdied == 0
 
-rename r4status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0)
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl4resnew resnew_flg
-recode resnew_flg (-9/-1 2=0)
-
-rename r4dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0)
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
 }
 
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
 
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
 
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0)
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0)
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0)
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0)
-
-rename *4varunit* varunit
-rename *4varstrat* varstrat
-rename *4anfinwgt0* anfinwgt0
-
+// keep only variables of interest
 keep ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 work* reti* *skip* snp* nopay* var* anfinwgt0
@@ -1188,152 +1004,100 @@ describe
 count
 save "clean_rounds/R4_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 5
+*---------ROUND 5
 use "merged_rounds/R5.dta", clear
 describe
 count
 
 g year = 2015
+gen retire = lf5workfpay == 3
 
-rename r5dcontnew cohort
+// rename variables with general names (non-round specific)
+rename r5dgender    gender
+rename rl5dracehisp race
+rename el5higstschl entryed
+rename r5dcontnew   cohort
+rename fl5spdied    spdied
+rename r5status     spstatus
+rename fl5resnew    resnew_flg
+rename r5dresid     resid
+rename *resptype*   resptype
+rename *intvrage*   intvage
+rename *marstat*    marstat
+rename *hshldnum*   houshldsz
+rename *lvngarrg*   lvngarrg
+rename *placedesc*  resdesc
+rename *placekind*  reskind
+rename *retiresen*  retirhous
+rename *sec8pubsn*  pubsnhous
+rename *facdescr*   facdesc_fq
+rename *osfacd*     osfacds_fq
+rename *facarea*    facarea_fq
+rename *osfaca*     osfacar_fq
+rename *censdiv*    censdiv
+rename *metnonmet*  metro
+rename *mgapmedsp*  medigapcov
+rename *covmedcad*  partdcov
+rename *otdrugcov*  otdrugcov
+rename *covtricar*  tricarcov
+rename *medicaid*   medicaidcov
+rename *totinc*     totalinc
+rename *workfpay*   workpay
+rename *wrkplstmn*  worklsmo
+rename *mealskip1*  skipmeal
+rename *mealskip2*  freqskipmeal
+rename *shopwout*   skipgroc
+rename *howpaygr5*  snpebt_flg
+rename *progneed1*  snpebt
+rename *bankwout*   nopaybill
+rename *nopayhous*  nopayhous
+rename *nopayutil*  nopayutil
+rename *nopaymed*   nopaymed
+rename *5varunit*   varunit
+rename *5varstrat*  varstrat
+rename *5anfinwgt0* anfinwgt0
+
+forvalues i = 1/10 {
+    rename hc5disescn`i' disescn`i'
+}
+
+// label and define values of cohort variable
 label var cohort "Cohort (Entry Round)"
 label val cohort cohort
-label def cohort 1 "R1" 2 "R5" 3 "R12" 4 "R13"
+label def cohort ///
+1 "R1" ///
+2 "R5" ///
+3 "R12" ///
+4 "R13" ///
 
-rename r5dgender gender
-
-rename rl5dracehisp race
-recode race (4=3) (3=4) (5 6=5)
-
-rename el5higstschl entryed
-recode entryed (-9/-1=.)
-
-rename fl5spdied spdied
+// keep only living respondents
 recode spdied (-1=0)
 keep if spdied == 0
 
-rename r5status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0)
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl5resnew resnew_flg
-recode resnew_flg (-9/-1 2=0)
-
-rename r5dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0)
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
 }
 
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
 
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode race         (4=3) (3=4) (5 6=5)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
 
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *totinc* totalinc
-recode totalinc (-9/-1 .=.)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0) 
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0) 
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0) 
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0) 
-
-rename *5varunit* varunit
-rename *5varstrat* varstrat
-rename *5anfinwgt0* anfinwgt0
-
+// keep only variables of interest
 keep ///
-gender race entryed cohort///
+gender race entryed cohort ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 tot* work* reti* *skip* snp* nopay* var* anfinwgt0
 sort spid
@@ -1341,134 +1105,83 @@ describe
 count
 save "clean_rounds/R5_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 6
+*---------ROUND 6
 use "merged_rounds/R6.dta", clear
 describe
 count
 
 g year = 2016
+gen retire = lf6workfpay == 3
 
-rename fl6spdied spdied
-recode spdied (-1=0) 
-keep if spdied == 0
-
-rename r6status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0) 
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl6resnew resnew_flg
-recode resnew_flg (-9/-1 2=0) 
-
-rename r6dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0) 
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
-}
-
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
-
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
-
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0) 
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0) 
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0) 
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0) 
-
-rename *6varunit* varunit
-rename *6varstrat* varstrat
+// rename variables with general names (non-round specific)
+rename fl6spdied    spdied
+rename r6status     spstatus
+rename fl6resnew    resnew_flg
+rename r6dresid     resid
+rename *resptype*   resptype
+rename *intvrage*   intvage
+rename *marstat*    marstat
+rename *hshldnum*   houshldsz
+rename *lvngarrg*   lvngarrg
+rename *placedesc*  resdesc
+rename *placekind*  reskind
+rename *retiresen*  retirhous
+rename *sec8pubsn*  pubsnhous
+rename *facdescr*   facdesc_fq
+rename *osfacd*     osfacds_fq
+rename *facarea*    facarea_fq
+rename *osfaca*     osfacar_fq
+rename *censdiv*    censdiv
+rename *metnonmet*  metro
+rename *mgapmedsp*  medigapcov
+rename *covmedcad*  partdcov
+rename *otdrugcov*  otdrugcov
+rename *covtricar*  tricarcov
+rename *medicaid*   medicaidcov
+rename *workfpay*   workpay
+rename *wrkplstmn*  worklsmo
+rename *mealskip1*  skipmeal
+rename *mealskip2*  freqskipmeal
+rename *shopwout*   skipgroc
+rename *howpaygr5*  snpebt_flg
+rename *progneed1*  snpebt
+rename *bankwout*   nopaybill
+rename *nopayhous*  nopayhous
+rename *nopayutil*  nopayutil
+rename *nopaymed*   nopaymed
+rename *6varunit*   varunit
+rename *6varstrat*  varstrat
 rename *6anfinwgt0* anfinwgt0
 
+forvalues i = 1/10 {
+    rename hc6disescn`i' disescn`i'
+}
+
+// keep only living respondents
+recode spdied (-1=0)
+keep if spdied == 0
+
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
+}
+
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
+
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
+
+// keep only variables of interest
 keep ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 work* reti* *skip* snp* nopay* var* anfinwgt0
@@ -1477,137 +1190,84 @@ describe
 count
 save "clean_rounds/R6_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 7
+*---------ROUND 7
 use "merged_rounds/R7.dta", clear
 describe
 count
 
 g year = 2017
+gen retire = lf7workfpay == 3
 
-rename fl7spdied spdied
-recode spdied (-1=0) 
-keep if spdied == 0
-
-rename r7status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0) 
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl7resnew resnew_flg
-recode resnew_flg (-9/-1 2=0) 
-
-rename r7dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0) 
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
-}
-
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
-
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
-
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *totinc* totalinc
-recode totalinc (-9/-1 .=.)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0) 
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0) 
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0) 
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0) 
-
-rename *7varunit* varunit
-rename *7varstrat* varstrat
+// rename variables with general names (non-round specific)
+rename fl7spdied    spdied
+rename r7status     spstatus
+rename fl7resnew    resnew_flg
+rename r7dresid     resid
+rename *resptype*   resptype
+rename *intvrage*   intvage
+rename *marstat*    marstat
+rename *hshldnum*   houshldsz
+rename *lvngarrg*   lvngarrg
+rename *placedesc*  resdesc
+rename *placekind*  reskind
+rename *retiresen*  retirhous
+rename *sec8pubsn*  pubsnhous
+rename *facdescr*   facdesc_fq
+rename *osfacd*     osfacds_fq
+rename *facarea*    facarea_fq
+rename *osfaca*     osfacar_fq
+rename *censdiv*    censdiv
+rename *metnonmet*  metro
+rename *mgapmedsp*  medigapcov
+rename *covmedcad*  partdcov
+rename *otdrugcov*  otdrugcov
+rename *covtricar*  tricarcov
+rename *medicaid*   medicaidcov
+rename *totinc*     totalinc
+rename *workfpay*   workpay
+rename *wrkplstmn*  worklsmo
+rename *mealskip1*  skipmeal
+rename *mealskip2*  freqskipmeal
+rename *shopwout*   skipgroc
+rename *howpaygr5*  snpebt_flg
+rename *progneed1*  snpebt
+rename *bankwout*   nopaybill
+rename *nopayhous*  nopayhous
+rename *nopayutil*  nopayutil
+rename *nopaymed*   nopaymed
+rename *7varunit*   varunit
+rename *7varstrat*  varstrat
 rename *7anfinwgt0* anfinwgt0
 
+forvalues i = 1/10 {
+    rename hc7disescn`i' disescn`i'
+}
+
+// keep only living respondents
+recode spdied (-1=0)
+keep if spdied == 0
+
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
+}
+
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
+
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
+
+// keep only variables of interest
 keep ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 tot* work* reti* *skip* snp* nopay* var* anfinwgt0
@@ -1616,134 +1276,83 @@ describe
 count
 save "clean_rounds/R7_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 8
+*---------ROUND 8
 use "merged_rounds/R8.dta", clear
 describe
 count
 
 g year = 2018
+gen retire = lf8workfpay == 3
 
-rename fl8spdied spdied
-recode spdied (-1=0) 
-keep if spdied == 0
-
-rename r8status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0) 
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl8resnew resnew_flg
-recode resnew_flg (-9/-1 2=0) 
-
-rename r8dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0) 
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
-}
-
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
-
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
-
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0) 
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0) 
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0) 
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0) 
-
-rename *8varunit* varunit
-rename *8varstrat* varstrat
+// rename variables with general names (non-round specific)
+rename fl8spdied    spdied
+rename r8status     spstatus
+rename fl8resnew    resnew_flg
+rename r8dresid     resid
+rename *resptype*   resptype
+rename *intvrage*   intvage
+rename *marstat*    marstat
+rename *hshldnum*   houshldsz
+rename *lvngarrg*   lvngarrg
+rename *placedesc*  resdesc
+rename *placekind*  reskind
+rename *retiresen*  retirhous
+rename *sec8pubsn*  pubsnhous
+rename *facdescr*   facdesc_fq
+rename *osfacd*     osfacds_fq
+rename *facarea*    facarea_fq
+rename *osfaca*     osfacar_fq
+rename *censdiv*    censdiv
+rename *metnonmet*  metro
+rename *mgapmedsp*  medigapcov
+rename *covmedcad*  partdcov
+rename *otdrugcov*  otdrugcov
+rename *covtricar*  tricarcov
+rename *medicaid*   medicaidcov
+rename *workfpay*   workpay
+rename *wrkplstmn*  worklsmo
+rename *mealskip1*  skipmeal
+rename *mealskip2*  freqskipmeal
+rename *shopwout*   skipgroc
+rename *howpaygr5*  snpebt_flg
+rename *progneed1*  snpebt
+rename *bankwout*   nopaybill
+rename *nopayhous*  nopayhous
+rename *nopayutil*  nopayutil
+rename *nopaymed*   nopaymed
+rename *8varunit*   varunit
+rename *8varstrat*  varstrat
 rename *8anfinwgt0* anfinwgt0
 
+forvalues i = 1/10 {
+    rename hc8disescn`i' disescn`i'
+}
+
+// keep only living respondents
+recode spdied (-1=0)
+keep if spdied == 0
+
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
+}
+
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
+
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
+
+// keep only variables of interest
 keep ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 work* reti* *skip* snp* nopay* var* anfinwgt0
@@ -1752,137 +1361,84 @@ describe
 count
 save "clean_rounds/R8_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 9
+*---------ROUND 9
 use "merged_rounds/R9.dta", clear
 describe
 count
 
 g year = 2019
+gen retire = lf9workfpay == 3
 
-rename fl9spdied spdied
-recode spdied (-1=0) 
-keep if spdied == 0
-
-rename r9status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0) 
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl9resnew resnew_flg
-recode resnew_flg (-9/-1 2=0)
-
-rename r9dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0)
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
-}
-
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
-
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
-
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *totinc* totalinc
-recode totalinc (-9/-1 .=.)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0)
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0)
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0)
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0)
-
-rename *9varunit* varunit
-rename *9varstrat* varstrat
+// rename variables with general names (non-round specific)
+rename fl9spdied    spdied
+rename r9status     spstatus
+rename fl9resnew    resnew_flg
+rename r9dresid     resid
+rename *resptype*   resptype
+rename *intvrage*   intvage
+rename *marstat*    marstat
+rename *hshldnum*   houshldsz
+rename *lvngarrg*   lvngarrg
+rename *placedesc*  resdesc
+rename *placekind*  reskind
+rename *retiresen*  retirhous
+rename *sec8pubsn*  pubsnhous
+rename *facdescr*   facdesc_fq
+rename *osfacd*     osfacds_fq
+rename *facarea*    facarea_fq
+rename *osfaca*     osfacar_fq
+rename *censdiv*    censdiv
+rename *metnonmet*  metro
+rename *mgapmedsp*  medigapcov
+rename *covmedcad*  partdcov
+rename *otdrugcov*  otdrugcov
+rename *covtricar*  tricarcov
+rename *medicaid*   medicaidcov
+rename *totinc*     totalinc
+rename *workfpay*   workpay
+rename *wrkplstmn*  worklsmo
+rename *mealskip1*  skipmeal
+rename *mealskip2*  freqskipmeal
+rename *shopwout*   skipgroc
+rename *howpaygr5*  snpebt_flg
+rename *progneed1*  snpebt
+rename *bankwout*   nopaybill
+rename *nopayhous*  nopayhous
+rename *nopayutil*  nopayutil
+rename *nopaymed*   nopaymed
+rename *9varunit*   varunit
+rename *9varstrat*  varstrat
 rename *9anfinwgt0* anfinwgt0
 
+forvalues i = 1/10 {
+    rename hc9disescn`i' disescn`i'
+}
+
+// keep only living respondents
+recode spdied (-1=0)
+keep if spdied == 0
+
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
+}
+
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
+
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
+
+// keep only variables of interest
 keep ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 tot* work* reti* *skip* snp* nopay* var* anfinwgt0
@@ -1891,134 +1447,83 @@ describe
 count
 save "clean_rounds/R9_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 10
+*---------ROUND 10
 use "merged_rounds/R10.dta", clear
 describe
 count
 
 g year = 2020
+gen retire = lf10workfpay == 3
 
-rename fl10spdied spdied
+// rename variables with general names (non-round specific)
+rename fl10spdied    spdied
+rename r10status     spstatus
+rename fl10resnew    resnew_flg
+rename r10dresid     resid
+rename *resptype*    resptype
+rename *intvrage*    intvage
+rename *marstat*     marstat
+rename *hshldnum*    houshldsz
+rename *lvngarrg*    lvngarrg
+rename *placedesc*   resdesc
+rename *placekind*   reskind
+rename *retiresen*   retirhous
+rename *sec8pubsn*   pubsnhous
+rename *facdescr*    facdesc_fq
+rename *osfacd*      osfacds_fq
+rename *facarea*     facarea_fq
+rename *osfaca*      osfacar_fq
+rename *censdiv*     censdiv
+rename *metnonmet*   metro
+rename *mgapmedsp*   medigapcov
+rename *covmedcad*   partdcov
+rename *otdrugcov*   otdrugcov
+rename *covtricar*   tricarcov
+rename *medicaid*    medicaidcov
+rename *workfpay*    workpay
+rename *wrkplstmn*   worklsmo
+rename *mealskip1*   skipmeal
+rename *mealskip2*   freqskipmeal
+rename *shopwout*    skipgroc
+rename *howpaygr5*   snpebt_flg
+rename *progneed1*   snpebt
+rename *bankwout*    nopaybill
+rename *nopayhous*   nopayhous
+rename *nopayutil*   nopayutil
+rename *nopaymed*    nopaymed
+rename *10varunit*   varunit
+rename *10varstrat*  varstrat
+rename *10anfinwgt0* anfinwgt0
+
+forvalues i = 1/10 {
+    rename hc10disescn`i' disescn`i'
+}
+
+// keep only living respondents
 recode spdied (-1=0)
 keep if spdied == 0
 
-rename r10status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0)
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl10resnew resnew_flg
-recode resnew_flg (-9/-1 2=0)
-
-rename r10dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0)
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
 }
 
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
 
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
 
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0)
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0)
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0)
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0)
-
-rename *10varunit* varunit
-rename *10varstrat* varstrat
-rename *10anfinwgt0* anfinwgt0
-
+// keep only variables of interest
 keep ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 work* reti* *skip* snp* nopay* var* anfinwgt0
@@ -2027,137 +1532,84 @@ describe
 count
 save "clean_rounds/R10_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 11
+*---------ROUND 11
 use "merged_rounds/R11.dta", clear
 describe
 count
 
 g year = 2021
+gen retire = lf11workfpay == 3
 
-rename fl11spdied spdied
+// rename variables with general names (non-round specific)
+rename fl11spdied    spdied
+rename r11status     spstatus
+rename fl11resnew    resnew_flg
+rename r11dresid     resid
+rename *resptype*    resptype
+rename *intvrage*    intvage
+rename *marstat*     marstat
+rename *hshldnum*    houshldsz
+rename *lvngarrg*    lvngarrg
+rename *placedesc*   resdesc
+rename *placekind*   reskind
+rename *retiresen*   retirhous
+rename *sec8pubsn*   pubsnhous
+rename *facdescr*    facdesc_fq
+rename *osfacd*      osfacds_fq
+rename *facarea*     facarea_fq
+rename *osfaca*      osfacar_fq
+rename *censdiv*     censdiv
+rename *metnonmet*   metro
+rename *mgapmedsp*   medigapcov
+rename *covmedcad*   partdcov
+rename *otdrugcov*   otdrugcov
+rename *covtricar*   tricarcov
+rename *medicaid*    medicaidcov
+rename *totinc*      totalinc
+rename *workfpay*    workpay
+rename *wrkplstmn*   worklsmo
+rename *mealskip1*   skipmeal
+rename *mealskip2*   freqskipmeal
+rename *shopwout*    skipgroc
+rename *howpaygr5*   snpebt_flg
+rename *progneed1*   snpebt
+rename *bankwout*    nopaybill
+rename *nopayhous*   nopayhous
+rename *nopayutil*   nopayutil
+rename *nopaymed*    nopaymed
+rename *11varunit*   varunit
+rename *11varstrat*  varstrat
+rename *11anfinwgt0* anfinwgt0
+
+forvalues i = 1/10 {
+    rename hc11disescn`i' disescn`i'
+}
+
+// keep only living respondents
 recode spdied (-1=0)
 keep if spdied == 0
 
-rename r11status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0)
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl11resnew resnew_flg
-recode resnew_flg (-9/-1 2=0)
-
-rename r11dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0)
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
 }
 
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
 
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
 
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *totinc* totalinc
-recode totalinc (-9/-1 .=.)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0)
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0)
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0)
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0)
-
-rename *11varunit* varunit
-rename *11varstrat* varstrat
-rename *11anfinwgt0* anfinwgt0
-
+// keep only variables of interest
 keep ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 tot* work* reti* *skip* snp* nopay* var* anfinwgt0
@@ -2166,150 +1618,95 @@ describe
 count
 save "clean_rounds/R11_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 12
+*---------ROUND 12
 use "merged_rounds/R12.dta", clear
 describe
 count
 
 g year = 2022
+gen retire = lf12workfpay == 3
 
-tab r12dcontnew
+// rename variables with general names (non-round specific)
+rename r12dgender gender
+rename *racehisp* race
+rename *higstschl* entryed
+rename fl12spdied    spdied
+rename r12status     spstatus
+rename fl12resnew    resnew_flg
+rename r12dresid     resid
+rename *resptype*    resptype
+rename *intvrage*    intvage
+rename *marstat*     marstat
+rename *hshldnum*    houshldsz
+rename *lvngarrg*    lvngarrg
+rename *placedesc*   resdesc
+rename *placekind*   reskind
+rename *retiresen*   retirhous
+rename *sec8pubsn*   pubsnhous
+rename *facdescr*    facdesc_fq
+rename *osfacd*      osfacds_fq
+rename *facarea*     facarea_fq
+rename *osfaca*      osfacar_fq
+rename *censdiv*     censdiv
+rename *metnonmet*   metro
+rename *mgapmedsp*   medigapcov
+rename *covmedcad*   partdcov
+rename *otdrugcov*   otdrugcov
+rename *covtricar*   tricarcov
+rename *medicaid*    medicaidcov
+rename *totinc*      totalinc
+rename *workfpay*    workpay
+rename *wrkplstmn*   worklsmo
+rename *mealskip1*   skipmeal
+rename *mealskip2*   freqskipmeal
+rename *shopwout*    skipgroc
+rename *howpaygr5*   snpebt_flg
+rename *progneed1*   snpebt
+rename *bankwout*    nopaybill
+rename *nopayhous*   nopayhous
+rename *nopayutil*   nopayutil
+rename *nopaymed*    nopaymed
+rename *12varunit*   varunit
+rename *12varstrat*  varstrat
+rename *12anfinwgt0* anfinwgt0
+
+forvalues i = 1/10 {
+    rename hc12disescn`i' disescn`i'
+}
+
+// label and define new cohort indicator variable
 label var r12dcontnew "Suvery Entry Round"
 label val r12dcontnew r12new
-label def r12new 1 "R1/R5" 2 "R12"
+label def r12new ///
+1 "R1/R5" ///
+2 "R12"
 
-rename r12dgender gender
-
-rename *racehisp* race
-recode race (4=3) (3=4) (5 6=5)
-
-rename *higstschl* entryed
-recode entryed (-9/-1=.)
-
-rename fl12spdied spdied
+// keep only living respondents
 recode spdied (-1=0)
 keep if spdied == 0
 
-rename r12status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0)
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl12resnew resnew_flg
-recode resnew_flg (-9/-1 2=0)
-
-rename r12dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename *metnonmet* metro
-recode metro (2=0)
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
 }
 
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
 
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode race         (4=3) (3=4) (5 6=5)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
 
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *totinc* totalinc
-recode totalinc (-9/-1 .=.)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0)
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0)
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0)
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0)
-
-rename *12varunit* varunit
-rename *12varstrat* varstrat
-rename *12anfinwgt0* anfinwgt0
-
+// keep only variables of interest
 keep ///
 gender race entryed r12dcontnew ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
@@ -2319,150 +1716,95 @@ describe
 count
 save "clean_rounds/R12_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 13
+*---------ROUND 13
 use "merged_rounds/R13.dta", clear
 describe
 count
 
 g year = 2023
+gen retire = lf13workfpay == 3
 
-tab r13dcontnew
+// rename variables with general names (non-round specific)
+rename r13dgender      gender
+rename *racehisp*      race
+rename *higstschl*     entryed
+rename fl13spdied      spdied
+rename r13status       spstatus
+rename fl13resnew      resnew_flg
+rename r13dresid       resid
+rename *resptype*      resptype
+rename *intvrage*      intvage
+rename *marstat*       marstat
+rename *hshldnum*      houshldsz
+rename *lvngarrg*      lvngarrg
+rename *placedesc*     resdesc
+rename *placekind*     reskind
+rename *retiresen*     retirhous
+rename *sec8pubsn*     pubsnhous
+rename *facdescr*      facdesc_fq
+rename *osfacd*        osfacds_fq
+rename *facarea*       facarea_fq
+rename *osfaca*        osfacar_fq
+rename *censdiv*       censdiv
+rename r13dmetnonmet   metro
+rename *mgapmedsp*     medigapcov
+rename *covmedcad*     partdcov
+rename *otdrugcov*     otdrugcov
+rename *covtricar*     tricarcov
+rename *medicaid*      medicaidcov
+rename *totinc*        totalinc
+rename *workfpay*      workpay
+rename *wrkplstmn*     worklsmo
+rename *mealskip1*     skipmeal
+rename *mealskip2*     freqskipmeal
+rename *shopwout*      skipgroc
+rename *howpaygr5*     snpebt_flg
+rename *progneed1*     snpebt
+rename *bankwout*      nopaybill
+rename *nopayhous*     nopayhous
+rename *nopayutil*     nopayutil
+rename *nopaymed*      nopaymed
+rename *13varunit*     varunit
+rename *13varstrat*    varstrat
+rename *13anfinwgt0*   anfinwgt0
+
+forvalues i = 1/10 {
+    rename hc13disescn`i' disescn`i'
+}
+
+// label and define new cohort indicator variable
 label var r13dcontnew "Suvery Entry Round"
 label val r13dcontnew r13new
-label def r13new 1 "R1/R5/R12" 2 "R13"
+label def r13new ///
+1 "R1/R5/R12" ///
+2 "R13"
 
-rename r13dgender gender
-
-rename *racehisp* race
-recode race (4=3) (3=4) (5 6=5)
-
-rename *higstschl* entryed
-recode entryed (-9/-1=.)
-
-rename fl13spdied spdied
+// keep only living respondents
 recode spdied (-1=0)
 keep if spdied == 0
 
-rename r13status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0)
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl13resnew resnew_flg
-recode resnew_flg (-9/-1 2=0)
-
-rename r13dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename r13dmetnonmet metro
-recode metro (2=0)
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
 }
 
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
 
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode race         (4=3) (3=4) (5 6=5)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
 
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *totinc* totalinc
-recode totalinc (-9/-1 .=.)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0)
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0)
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0)
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0)
-
-rename *13varunit* varunit
-rename *13varstrat* varstrat
-rename *13anfinwgt0* anfinwgt0
-
+// keep only variables of interest
 keep ///
 gender race entryed r13dcontnew ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
@@ -2472,137 +1814,84 @@ describe
 count
 save "clean_rounds/R13_clean.dta", replace
 
+/*--------------------------------------------------------------------------*/
 
-*------------ROUND 14
+*---------ROUND 14
 use "merged_rounds/R14.dta", clear
 describe
 count
 
 g year = 2024
+gen retire = lf14workfpay == 3
 
-rename fl14spdied spdied
+// rename variables with general names (non-round specific)
+rename fl14spdied      spdied
+rename r14status       spstatus
+rename fl14resnew      resnew_flg
+rename r14dresid       resid
+rename *resptype*      resptype
+rename *intvrage*      intvage
+rename *marstat*       marstat
+rename *hshldnum*      houshldsz
+rename *lvngarrg*      lvngarrg
+rename *placedesc*     resdesc
+rename *placekind*     reskind
+rename *retiresen*     retirhous
+rename *sec8pubsn*     pubsnhous
+rename *facdescr*      facdesc_fq
+rename *osfacd*        osfacds_fq
+rename *facarea*       facarea_fq
+rename *osfaca*        osfacar_fq
+rename *censdiv*       censdiv
+rename r14dmetnonmet   metro
+rename *mgapmedsp*     medigapcov
+rename *covmedcad*     partdcov
+rename *otdrugcov*     otdrugcov
+rename *covtricar*     tricarcov
+rename *medicaid*      medicaidcov
+rename *totinc*        totalinc
+rename *workfpay*      workpay
+rename *wrkplstmn*     worklsmo
+rename *mealskip1*     skipmeal
+rename *mealskip2*     freqskipmeal
+rename *shopwout*      skipgroc
+rename *howpaygr5*     snpebt_flg
+rename *progneed1*     snpebt
+rename *bankwout*      nopaybill
+rename *nopayhous*     nopayhous
+rename *nopayutil*     nopayutil
+rename *nopaymed*      nopaymed
+rename *14varunit*     varunit
+rename *14varstrat*    varstrat
+rename *14anfinwgt0*   anfinwgt0
+
+forvalues i = 1/10 {
+    rename hc14disescn`i' disescn`i'
+}
+
+// keep only living respondents
 recode spdied (-1=0)
 keep if spdied == 0
 
-rename r14status spstatus
-
-rename *resptype* resptype
-recode resptype (-9/-1=.)
-
-rename *intvrage* intvage
-
-rename *marstat* marstat
-recode marstat (-9/-1=.)
-
-rename *marchange* marchange
-recode marchange (-9/-1 2=0)
-
-rename *hshldnum* houshldsz
-recode houshldsz (min/0=.)
-
-rename *lvngarrg* lvngarrg
-recode lvngarrg (4=3) (3=4) (-9/-1=.)
-
-rename fl14resnew resnew_flg
-recode resnew_flg (-9/-1 2=0)
-
-rename r14dresid resid
-recode resid (2 3 7=2) (4 5 8=3)
-
-rename *placedesc* resdesc
-recode resdesc (91=5) (-9/-1=6)
-
-rename *placekind* reskind
-recode reskind (3=2) (5=3) (91=4) (-9/-1=5)
-
-rename *retiresen* retirhous
-recode retirhous (-9/-1 2=0)
-
-rename *sec8pubsn* pubsnhous
-recode pubsnhous (-9/-1 2=0)
-
-rename *facdescr* factype_fq
-recode factype_fq (91=9) (-9/-1=10)
-
-rename *osfacd* othfactype_fq
-recode othfactype_fq (-9/-1=12)
-
-rename *facarea* facarea_fq
-recode facarea_fq (91=5) (-9/-1=6)
-
-rename *osfaca* othfacarea_fq
-recode othfacarea_fq (-9/-1=5)
-
-rename *censdiv* censdiv
-
-rename r14dmetnonmet metro
-recode metro (2=0)
-
-local i = 1
-forvalues i = 1/10 {
-    rename *disescn`i'* disescn`i'
-	recode disescn`i' (-9/-1 2=0)
+// recode necessary variables
+foreach var of varlist _all {
+    capture recode `var' (min/-1 = .)
 }
 
-rename *chginspln* chgplncov
-recode chgplncov (-9/-1 2=0)
+global B *hous* *cov* worklsmo skipgroc skipmeal snpebt* nopay* metro disescn* resnew_flg
+recode $B (2 .=0)
 
-rename *mgapmedsp* medigapcov
-recode medigapcov (-9/-1 2=0)
+recode houshldsz    (0=.)
+recode lvngarrg     (4=3) (3=4)
+recode resid 	    (2 3 7=2) (4 5 8=3)
+recode resdesc 	    (91=5) 
+recode reskind      (3=2) (5=3) (91=6)
+recode facdesc_fq   (91=9)
+recode facarea_fq   (91=5)
+recode workpay      (2 3 .=0) 
+recode freqskipmeal (.=0) (1=4) (2=3) (3=2) (4=1)
 
-rename *covmedcad* partdcov
-recode partdcov (-9/-1 2=0)
-
-rename *otdrugcov* otdrugcov
-recode otdrugcov (-9/-1 2=0)
-
-rename *covtricar* tricarcov
-recode tricarcov (-9/-1 2=0)
-
-rename *cmedicaid* medicaidcov
-recode medicaidcov (-9/-1 2=0)
-
-rename *totinc* totalinc
-recode totalinc (-9/-1 .=.)
-
-rename *workfpay* workpay
-g retired = workpay == 3
-recode workpay (-9/-1 2 3=0) 
-
-rename *wrkplstmn* worklsmo
-recode worklsmo (-9/-1 2=0) 
-
-rename *mealskip1* skipmeal
-recode skipmeal (-9/-1 2=0)
-
-rename *mealskip2* freqskipmeal
-recode freqskipmeal (-9/-1=0) (1=4) (2=3) (3=2) (4=1)
-
-rename *shopwout* skipgroc
-recode skipgroc (-9/-1 2=0)
-
-rename *howpaygr5* snpebt_flg
-recode snpebt_flg (-9/-1 2=0)
-
-rename *progneed1* snpebt
-recode snpebt (-9/-1 2=0)
-
-rename *bankwout* nopaybill
-recode nopaybill (-9/-1 2=0)
-
-rename *nopayhous* nopayhous
-recode nopayhous (-9/-1 2=0)
-
-rename *nopayutil* nopayutil
-recode nopayutil (-9/-1 2=0)
-
-rename *nopaymed* nopaymed
-recode nopaymed (-9/-1 2=0)
-
-rename *14varunit* varunit
-rename *14varstrat* varstrat
-rename *14anfinwgt0* anfinwgt0
-
+// keep only variables of interest
 keep ///
 sp* year* intv* mar* lvn* res* *hous* *_fq* cen* met* dis* *cov* ///
 tot* work* reti* *skip* snp* nopay* var* anfinwgt0
@@ -2615,38 +1904,48 @@ save "clean_rounds/R14_clean.dta", replace
 /*============================================================================
 				3: Append Rounds 1-14
 ============================================================================*/
-cd "~/Library/CloudStorage/Box-Box/Medigap_Food/PPAR_revisions"
-
 use "clean_rounds/R1_clean.dta", clear
 gen round = 1
 label var round "Survey Round"
 
 append using "clean_rounds/R2_clean.dta"
 replace round = 2 if round == .
+
 append using "clean_rounds/R3_clean.dta"
 replace round = 3 if round == .
+
 append using "clean_rounds/R4_clean.dta"
 replace round = 4 if round == .
+
 append using "clean_rounds/R5_clean.dta"
 replace round = 5 if round == .
+
 append using "clean_rounds/R6_clean.dta"
 replace round = 6 if round == .
+
 append using "clean_rounds/R7_clean.dta"
 replace round = 7 if round == .
+
 append using "clean_rounds/R8_clean.dta"
 replace round = 8 if round == .
+
 append using "clean_rounds/R9_clean.dta"
 replace round = 9 if round == .
+
 append using "clean_rounds/R10_clean.dta"
 replace round = 10 if round == .
+
 append using "clean_rounds/R11_clean.dta"
 replace round = 11 if round == .
+
 append using "clean_rounds/R12_clean.dta"
 replace round = 12 if round == .
 replace cohort = 3 if r12dcontnew == 2
+
 append using "clean_rounds/R13_clean.dta"
 replace round = 13 if round == .
 replace cohort = 4 if r13dcontnew == 2
+
 append using "clean_rounds/R14_clean.dta"
 replace round = 14 if round == .
 
@@ -2711,6 +2010,7 @@ tab round spdied, m
 
 * CASE STATUS *
 tab spstatus, m
+
 g complete = inlist(spstatus,60,63)
 label var complete "Survey Completed"
 tab round complete
@@ -2730,6 +2030,7 @@ bysort round: tab complete ever_complete, m
 
 * RESPONDENT TYPE *
 tab resptype, m
+
 g proxy_flg = resptype == 2
 label var proxy_flg "Proxy Respondent Flag"
 tab round proxy_flg
@@ -2738,6 +2039,7 @@ tab round proxy_flg
 
 * GENDER *
 tab round gender, m
+
 bysort spid (round): replace gender = gender[_n-1] if gender == .
 tab round gender, m
 
@@ -2748,17 +2050,19 @@ label var female "Female"
 
 * RACE/ETHNICITY *
 tab round race, m
+
 bysort spid (round): replace race = race[_n-1] if race == .
 tab round race, m
 
-g white = race == 1
-label var white "Non-Hispanic White"
-g black = race == 2
-label var black "Non-Hispanic Black"
+g white    = race == 1
+g black    = race == 2
 g hispanic = race == 3
+g otherrc  = inlist(race,4,5)
+
+label var white    "Non-Hispanic White"
+label var black    "Non-Hispanic Black"
 label var hispanic "Hispanic"
-g otherrc = (race == 4 | race == 5)
-label var otherrc "Other Race(s)"
+label var otherrc  "Other Race(s)"
 
 global R  white black hispanic otherrc multirc
 global RX white black hispanic otherrc
@@ -2767,33 +2071,30 @@ global RX white black hispanic otherrc
 
 * EDUCATION *
 tab round entryed, m
+
 bysort spid (round): replace entryed = entryed[_n-1] if entryed == .
 recode entryed (.=10)
 tab round entryed, m
 
-g educ = .
-replace educ = 1 if inlist(entryed,1,2,3)
-replace educ = 2 if inlist(entryed,4,5,6)
-replace educ = 3 if inlist(entryed,7,8)
-replace educ = 4 if entryed == 9
-replace educ = 5 if entryed == 10
+recode entryed (1/3=1) (4/6=2) (7/8=3) (9=4) (10=5), gen(educ)
 label var educ "Educational Attainment Recode"
 label val educ educ
-label def educ 				  ///
+label def educ ///
 1 "Some High School or Lower" ///
-2 "High School Diploma" 	  ///
-3 "College Degree" 	 		  ///
-4 "Professional Degree" 	  ///
+2 "High School Diploma" ///
+3 "College Degree" ///
+4 "Professional Degree" ///
 5 "N/A"
 tab educ, m
 
-g hsdrop = educ == 1
-label var hsdrop "High School or Lower"
-g hsgrad = educ == 2
-label var hsgrad "High School Graduate"
-g coldeg = educ == 3
-label var coldeg "College Graduate"
+g hsdrop  = educ == 1
+g hsgrad  = educ == 2
+g coldeg  = educ == 3
 g profdeg = educ == 4
+
+label var hsdrop  "High School or Lower"
+label var hsgrad  "High School Graduate"
+label var coldeg  "College Graduate"
 label var profdeg "Professional Degree"
 
 global E  hsdrop hsgrad coldeg profdeg
@@ -2805,17 +2106,18 @@ global EX hsdrop hsgrad coldeg
 tab intvage, m
 
 g under70 = intvage == 1
-label var under70 "Age 65-69"
 g under75 = intvage == 2
-label var under75 "Age 70-74"
 g under80 = intvage == 3
-label var under80 "Age 75-79"
 g under85 = intvage == 4
-label var under85 "Age 80-84"
 g under90 = intvage == 5
+g over90  = intvage == 6
+
+label var under70 "Age 65-69"
+label var under75 "Age 70-74"
+label var under80 "Age 75-79"
+label var under85 "Age 80-84"
 label var under90 "Age 85-89"
-g over90 = intvage == 6
-label var over90 "Age 90+"
+label var over90  "Age 90+"
 
 global IA  under70 under75 under80 under85 under90 over90
 global IAX under70 under75 under80 under85 under90
@@ -2824,6 +2126,7 @@ global IAX under70 under75 under80 under85 under90
 
 * MARITAL STATUS *
 tab marstat, m
+
 recode marstat (.=7)
 tab marstat, m
 
@@ -2834,6 +2137,7 @@ label var married "Married"
 
 * LIVING ARRANGEMENT *
 tab lvngarrg, m
+
 recode lvngarrg (.=5)
 tab lvngarrg, m
 
@@ -2845,27 +2149,28 @@ label var lvalone "Lives Alone"
 * CENSUS  DIVISION *
 tab round censdiv, m
 
-g newengland = censdiv == 1
-label var newengland "New England"
-g midatlantic = censdiv == 2
-label var midatlantic "Mid Atlantic"
-g ne_mwcentr = censdiv == 3
-label var ne_mwcentr "Northeast Midwest"
-g nw_mwcentr = censdiv == 4
-label var nw_mwcentr "Northwest Midwest"
-g satlantic = censdiv == 5
-label var satlantic "South Atlantic"
-g se_centr = censdiv == 6
-label var se_centr "Southeast Central"
-g sw_centr = censdiv == 7
-label var sw_centr "Southwest Central"
-g wmountain = censdiv == 8
-label var wmountain "West Mountain"
-g wpacific = censdiv == 9
-label var wpacific "West Pacific"
+g neweng   = censdiv == 1
+g mid_atl  = censdiv == 2
+g s_atl    = censdiv == 3
+g ne_mdwst = censdiv == 4
+g nw_mdwst = censdiv == 5
+g se_cntrl = censdiv == 6
+g sw_cntrl = censdiv == 7
+g wstmtn   = censdiv == 8
+g pacific  = censdiv == 9
 
-global D  newengland midatlantic ne_mwcentr nw_mwcentr satlantic sw_centr wmountain wpacific se_centr
-global DX newengland midatlantic ne_mwcentr nw_mwcentr satlantic sw_centr wmountain wpacific
+label var neweng   "New England"
+label var mid_atl  "Mid Atlantic"
+label var s_atl    "South Atlantic"
+label var ne_mdwst "Northeast Midwest"
+label var nw_mdwst "Northwest Midwest"
+label var se_cntrl "Southeast Central"
+label var sw_cntrl "Southwest Central"
+label var wstmtn   "West Mountain"
+label var pacific  "West Pacific"
+
+global D   neweng mid_atl s_atl ne_mdwst nw_mdwst se_cntrl sw_cntrl wstmtn pacific
+global DX  neweng mid_atl s_atl ne_mdwst nw_mdwst		   sw_cntrl wstmtn pacific
 
 /*--------------------------------------------------------------------------*/
 
@@ -2881,26 +2186,26 @@ tab round resdesc, m
 tab round reskind, m
 tab round retirhous, m
 tab round pubsnhous, m
-tab round factype_fq, m
-tab round othfactype_fq, m
+tab round facdesc_fq, m
+tab round osfacds_fq, m
 tab round facarea_fq, m
-tab round othfacarea_fq, m
+tab round osfacar_fq, m
 
 
 // living facilities/institutions
-g rescrhm_fq = (inlist(factype_fq,5,6,7) | inlist(othfactype_fq,5,6,7))
+g rescrhm_fq = (inlist(facdesc_fq,5,6,7) | inlist(osfacds_fq,5,6,7))
 g rescarehm  =  resid == 2 & (resdesc == 2 | rescrhm_fq)
 label var rescarehm "Residential Care Home"
 
 g nursehm_sp =  inlist(reskind,3,4)
-g nursehm_fq = (inlist(factype_fq,1,3) | inlist(othfactype_fq,1,3) | ///
-				inlist(facarea_fq,3,4) | inlist(othfacarea_fq,3,4))
+g nursehm_fq = (inlist(facdesc_fq,1,3) | inlist(osfacds_fq,1,3) | ///
+			    inlist(facarea_fq,3,4) | inlist(osfacar_fq,3,4))
 g nursinghm  =  resid == 3 & (nursehm_sp | nursehm_fq)
 label var nursinghm "Nursing or Special Care Home"
 
 g asstlvng_sp = (resdesc == 3 | reskind == 2)
-g asstlvng_fq = (factype_fq == 2 | othfactype_fq == 2 | ///
-				 facarea_fq == 2 | othfacarea_fq == 2)
+g asstlvng_fq = (facdesc_fq == 2 | osfacds_fq == 2 | ///
+				 facarea_fq == 2 | osfacar_fq == 2)
 g asstlvng    = (asstlvng_sp | asstlvng_fq)
 label var asstlvng "Assisted Living"
 
@@ -2910,12 +2215,12 @@ label var religsqrtrs "Religious Group Quarters"
 
 // community/independent living
 g privres_sp = (resdesc == 1 | reskind == 1)
-g privres_fq = (facarea_fq == 1 | othfacarea_fq == 1 | ///
-				inlist(othfactype_fq,9,11))
+g privres_fq = (facarea_fq == 1 | osfacar_fq == 1 | ///
+				inlist(osfacds_fq,9,11))
 g privres    =  resid == 1 & (privres_sp | privres_fq)
 label var privres "Private Residence"
 
-g senhous_fq = (factype_fq == 8 | othfactype_fq == 8)
+g senhous_fq = (facdesc_fq == 8 | osfacds_fq == 8)
 g seniorhous =  resid == 1 & (retirhous == 1 | senhous_fq == 1)
 label var seniorhous "Retirement Community"
 
@@ -2923,30 +2228,6 @@ g indpdntlv = (resid == 1 | privres == 1 | pubsnhous == 1 | seniorhous == 1)
 label var indpdntlv "Independent Living"
 tab indpdntlv, m
 tab round indpdntlv
-
-
-// residence type recode
-g residtype = .
-replace residtype = 1 if privres == 1
-replace residtype = 2 if pubsnhous == 1
-replace residtype = 3 if seniorhous == 1
-replace residtype = 4 if rescarehm == 1
-replace residtype = 5 if asstlvng == 1
-replace residtype = 6 if nursinghm == 1
-replace residtype = 7 if religsqrtrs == 1
-replace residtype = 8 if residtype == .
-label var residtype "Type of Residence Recode"
-label val residtype residtype
-label def residtype 			 ///
-1 "Private" 			  		 ///
-2 "Public Senior Housing" 		 ///
-3 "Retirement Community"  		 ///
-4 "Residential Care Home" 		 ///
-5 "Assisted Living"       		 ///
-6 "Nursing or Special Care Home" ///
-7 "Religious Group Quarters" 	 ///
-8 "N/A"
-tab residtype, m
 
 /*--------------------------------------------------------------------------*/
 
@@ -2957,7 +2238,7 @@ foreach var of varlist disescn1-disescn10 {
 
 local hlthcond " disescn1 disescn2 disescn3 disescn4 disescn5 disescn6 disescn7 disescn8 disescn9 disescn10 "
 
-
+// generate health condition variable
 gen hlthcondev = (disescn1 == 1 | disescn2 == 1 | disescn3 == 1 | ///
                   disescn4 == 1 | disescn5 == 1 | disescn6 == 1 | ///
                   disescn7 == 1 | disescn8 == 1 | disescn9 == 1 | ///
@@ -2965,18 +2246,17 @@ gen hlthcondev = (disescn1 == 1 | disescn2 == 1 | disescn3 == 1 | ///
 label var hlthcondev "Have Health Condition(s)"
 tab hlthcondev 
 
-
-g numhlthcond = (disescn1 + disescn2 + disescn3 + disescn4 + disescn5 + ///
-                 disescn6 + disescn7 + disescn8 + disescn9 + disescn10)
+// count health conditions
+gen numhlthcond = (disescn1 + disescn2 + disescn3 + disescn4 + disescn5 + ///
+                   disescn6 + disescn7 + disescn8 + disescn9 + disescn10)
 label var numhlthcond "Number of Health Conditions Across Sample"
 sum numhlthcond
 tab numhlthcond
 
-
 egen meanhlthcondev = mean(hlthcondev)
 tab meanhlthcondev
 
-
+// check total and average nums of health conditions
 local total_count = 0
 local num_vars = 10
 foreach var of varlist disescn1-disescn10 {
@@ -2992,7 +2272,7 @@ display "Average observations per condition: `avghlthcond'"
 /*--------------------------------------------------------------------------*/
 
 * RETIREMENT/EMPLOYMENT STATUS *
-tab round retired, m
+tab round retire, m
 tab round workpay, m
 tab round worklsmo, m
 
@@ -3008,11 +2288,12 @@ tab totalinc
 
 /*--------------------------------------------------------------------------*/
 
-*// FPL & POVERTY TO INCOME RATIO (PIR)
+* FPL & POVERTY TO INCOME RATIO (PIR) *
 *// note: calcualted using annual HHS Poverty Guidelines
+
 g fpl_threshold = .
 
-*-------------2011:
+*----------2011:
 replace fpl_threshold = 10890 if year == 2011 & houshldsz == 1
 replace fpl_threshold = 14710 if year == 2011 & houshldsz == 2
 replace fpl_threshold = 18530 if year == 2011 & houshldsz == 3
@@ -3029,7 +2310,7 @@ replace fpl_threshold = 52910 if year == 2011 & houshldsz == 12
 replace fpl_threshold = 56730 if year == 2011 & houshldsz == 13
 replace fpl_threshold = 60550 if year == 2011 & houshldsz == 14
 
-*-------------2013:
+*----------2013:
 replace fpl_threshold = 11490 if year == 2013 & houshldsz == 1
 replace fpl_threshold = 15510 if year == 2013 & houshldsz == 2
 replace fpl_threshold = 19530 if year == 2013 & houshldsz == 3
@@ -3046,7 +2327,7 @@ replace fpl_threshold = 55710 if year == 2013 & houshldsz == 12
 replace fpl_threshold = 59730 if year == 2013 & houshldsz == 13
 replace fpl_threshold = 63750 if year == 2013 & houshldsz == 14
 
-*-------------2015:
+*----------2015:
 replace fpl_threshold = 11770 if year == 2015 & houshldsz == 1
 replace fpl_threshold = 15930 if year == 2015 & houshldsz == 2
 replace fpl_threshold = 20090 if year == 2015 & houshldsz == 3
@@ -3063,7 +2344,7 @@ replace fpl_threshold = 57530 if year == 2015 & houshldsz == 12
 replace fpl_threshold = 61690 if year == 2015 & houshldsz == 13
 replace fpl_threshold = 65850 if year == 2015 & houshldsz == 14
 
-*-------------2017:
+*----------2017:
 replace fpl_threshold = 12060 if year == 2017 & houshldsz == 1
 replace fpl_threshold = 16240 if year == 2017 & houshldsz == 2
 replace fpl_threshold = 20420 if year == 2017 & houshldsz == 3
@@ -3097,7 +2378,7 @@ replace fpl_threshold = 61110 if year == 2019 & houshldsz == 12
 replace fpl_threshold = 65530 if year == 2019 & houshldsz == 13
 replace fpl_threshold = 69950 if year == 2019 & houshldsz == 14
 
-*-------------2021:
+*----------2021:
 replace fpl_threshold = 12880 if year == 2021 & houshldsz == 1
 replace fpl_threshold = 17420 if year == 2021 & houshldsz == 2
 replace fpl_threshold = 21960 if year == 2021 & houshldsz == 3
@@ -3114,7 +2395,7 @@ replace fpl_threshold = 62820 if year == 2021 & houshldsz == 12
 replace fpl_threshold = 67360 if year == 2021 & houshldsz == 13
 replace fpl_threshold = 71900 if year == 2021 & houshldsz == 14
 
-*-------------2022:
+*----------2022:
 replace fpl_threshold = 13590 if year == 2022 & houshldsz == 1
 replace fpl_threshold = 18310 if year == 2022 & houshldsz == 2
 replace fpl_threshold = 23030 if year == 2022 & houshldsz == 3
@@ -3131,7 +2412,7 @@ replace fpl_threshold = 65510 if year == 2022 & houshldsz == 12
 replace fpl_threshold = 70230 if year == 2022 & houshldsz == 13
 replace fpl_threshold = 74950 if year == 2022 & houshldsz == 14
 
-*-------------2023:
+*----------2023:
 replace fpl_threshold = 14580 if year == 2023 & houshldsz == 1
 replace fpl_threshold = 19720 if year == 2023 & houshldsz == 2
 replace fpl_threshold = 24860 if year == 2023 & houshldsz == 3
@@ -3148,7 +2429,7 @@ replace fpl_threshold = 71120 if year == 2023 & houshldsz == 12
 replace fpl_threshold = 76260 if year == 2023 & houshldsz == 13
 replace fpl_threshold = 81400 if year == 2023 & houshldsz == 14
 
-*-------------2024:
+*----------2024:
 replace fpl_threshold = 15060 if year == 2024 & houshldsz == 1
 replace fpl_threshold = 20440 if year == 2024 & houshldsz == 2
 replace fpl_threshold = 25820 if year == 2024 & houshldsz == 3
@@ -3165,11 +2446,12 @@ replace fpl_threshold = 74240 if year == 2024 & houshldsz == 12
 replace fpl_threshold = 79620 if year == 2024 & houshldsz == 13
 replace fpl_threshold = 85000 if year == 2024 & houshldsz == 14
 
+// generate FPL ratio and percentage variables
+g fpl_ratio   = (totalinc / fpl_threshold)
+g fpl_percent = (totalinc / fpl_threshold) * 100
 
-g fpl_ratio = (totalinc / fpl_threshold)
-label var fpl_ratio "Ratio of Federal Poverty Line"
-g fpl_percentage = (totalinc / fpl_threshold) * 100
-label var fpl_percentage "Percentage of Federal Poverty Line"
+label var fpl_ratio   "Ratio of Federal Poverty Line"
+label var fpl_percent "Percentage of Federal Poverty Line"
 
 /*--------------------------------------------------------------------------*/
 
@@ -3256,11 +2538,11 @@ replace mcpts = 4 if othinscov == 1
 replace mcpts = 5 if tricarcov == 1
 label var mcpts "Categorical Health Care Coverage Type"
 label val mcpts mcpts
-label define mcpts      ///
-1 "Medigap"             ///
-2 "Medicare Part D"     ///
+label define mcpts ///
+1 "Medigap" ///
+2 "Medicare Part D" ///
 3 "Other Drug Coverage" ///
-4 "Other, Non-Medigap"  ///
+4 "Other, Non-Medigap" ///
 5 "TRICARE"
 tab mcpts, m
 
@@ -3325,25 +2607,25 @@ eststo est12: xtreg nopaymed medigapcov $YX $Z if indpdntlv == 1 & metro == 0 , 
 estadd ysumm
 estimates store rural
 
-esttab est1 est2 est3 est4 est5 est6 est7 est8 est9 est10 est11 est12 		///
+esttab est1 est2 est3 est4 est5 est6 est7 est8 est9 est10 est11 est12 ///
 using table3_nhats_rv.rtf, b(3) se(3) replace star(* 0.10 ** 0.05 *** 0.01) ///
-label ar2 compress nogaps indicate("Year FE = y*") 							///
-mtitles("Food Hardship" "Financial Hardship" "Medical Hardship") 			///
-mgroups("All" "Female Only" "Non-White Only" "Rural Only", 					///
-pattern(1 0 0 1 0 0 1 0 0 1 0 0)) 											///
-stats(N ymean ysd r2, labels("Observations" "Y Mean" "Y Std" "R-squared")) 	///
+label ar2 compress nogaps indicate("Year FE = y*") ///
+mtitles("Food Hardship" "Financial Hardship" "Medical Hardship") ///
+mgroups("All" "Female Only" "Non-White Only" "Rural Only", ///
+pattern(1 0 0 1 0 0 1 0 0 1 0 0)) ///
+stats(N ymean ysd r2, labels("Observations" "Y Mean" "Y Std" "R-squared")) ///
 addnote("NHATS 2011-2024.")
  
 
 /*--------------------------------------------------------------------------
 			  5.2: Figure 3
 --------------------------------------------------------------------------*/
-coefplot est1 est2 est3, bylabel(All)     ///
-	|| est4 est5 est6, bylabel(Woman) 	  ///
+coefplot est1 est2 est3, bylabel(All) ///
+	|| est4 est5 est6, bylabel(Woman) ///
 	|| est7 est8 est9, bylabel(Non-White) ///
-	|| est10 est11 est12, bylabel(Rural)  ///
+	|| est10 est11 est12, bylabel(Rural) ///
 	|| , plotlabels ("Food Hardship" "Financial Hardship" "Medical Hardship") ///
-    xline(0) 		   ///
+    xline(0) ///
 	keep(*medigapcov*) ///
 	coeflabels(,labsize(vsmall))
 graph export "fig3.png", as(png) name("Graph") replace
@@ -3360,8 +2642,8 @@ foreach num of numlist 2011/2024 {
     eststo est`num'
 }
 
-esttab * using nhats_mccov_rv.rtf, cells(mean(fmt(%9.3fc) 		 ///
-label(mean)) ) compress unstack 								 /// 
+esttab * using nhats_mccov_rv.rtf, cells(mean(fmt(%9.3fc) ///
+label(mean)) ) compress unstack /// 
 mtitles("2011" "2012" "2013" "2014" "2015" "2016" "2017" "2018" "2019" "2020" "2021" "2022" "2023" "2024") ///
 label replace nogaps title("Table 1: Medicare Coverage by Year") ///
 addnote("NHATS 2011-2024.")
@@ -3377,8 +2659,8 @@ foreach var of varlist $MC {
 }
 
 esttab * using nhats_demsumstats_rv.rtf, cells(mean(fmt(%9.3fc) ///
-label(mean))) compress unstack 									///
-mtitles("Medigap" "Other Coverage") 							///
+label(mean))) compress unstack ///
+mtitles("Medigap" "Other Coverage") ///
 label replace nogaps title("Table 2: Demographic Summary Statistics by Medicare Coverage, 2011 Cohort") ///
 addnote("NHATS 2011.")
 
